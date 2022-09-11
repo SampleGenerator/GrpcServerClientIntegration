@@ -1,8 +1,10 @@
 ﻿using Contracts.Models;
 using Contracts.Requests;
 using Contracts.Services;
+using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
+using ProtoBuf.Grpc;
 using ProtoBuf.Grpc.ClientFactory;
 using System.Text.Json;
 
@@ -59,7 +61,10 @@ static async Task CreateUser(IUserService userService)
         Friends = new List<Guid> { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() },
     };
 
-    var rsCreateUser = await userService.CreateUser(rq);
+    var options = new CallOptions(new Metadata());
+    options.Headers?.Add("Authorization", "Bearer a jwt token for example");
+    var context = new CallContext(options);
+    var rsCreateUser = await userService.CreateUser(rq, context);
     var rsCreateUserJson = JsonSerializer.Serialize(rsCreateUser, new JsonSerializerOptions
     {
         WriteIndented = true,

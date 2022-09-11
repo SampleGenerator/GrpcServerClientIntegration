@@ -11,6 +11,10 @@ internal sealed class UserService : IUserService
 
     public ValueTask<User> CreateUser(CreateUserRequest rq, CallContext context = default)
     {
+        var authorization = context.RequestHeaders?.Get("Authorization")?.Value;
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Authorization: {authorization}");
+        Console.ForegroundColor = ConsoleColor.White;
         var id = _users.Count + 1;
         var rs = new User
         {
