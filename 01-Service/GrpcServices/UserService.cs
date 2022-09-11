@@ -9,7 +9,7 @@ internal sealed class UserService : IUserService
 {
     private readonly static Dictionary<int, User> _users = new();
 
-    public async Task<User> CreateUser(CreateUserRequest rq, CallContext context = default)
+    public ValueTask<User> CreateUser(CreateUserRequest rq, CallContext context = default)
     {
         var id = _users.Count + 1;
         var rs = new User
@@ -20,25 +20,32 @@ internal sealed class UserService : IUserService
             Address = rq.Address,
             PhoneNumbers = rq.PhoneNumbers,
             Friends = rq.Friends,
+            CreationDate = DateTime.Now,
         };
 
         _users.TryAdd(id, rs);
 
-        return await Task.FromResult(rs);
+        return new ValueTask<User>(rs);
     }
 
-    public async Task<User> GetUser(GetUserRequest rq, CallContext context = default)
+    public ValueTask<User> GetUser(GetUserRequest rq, CallContext context = default)
     {
         var user = _users.GetValueOrDefault(rq.Id) ?? new User();
-        return await Task.FromResult(user);
+        return new ValueTask<User>(user);
     }
 
-    public async IAsyncEnumerable<User> GetUsers(CallContext context = default)
+    public async IAsyncEnumerable<User> GetUsersStream(CallContext context = default)
     {
         foreach (var user in _users.Values)
         {
             yield return user;
             await Task.CompletedTask;
         }
+    }
+
+    public ValueTask<IEnumerable<User>> GetUsersBuffer(CallContext context = default)
+    {
+        var users = _users.Values.ToList();
+        return new ValueTask<IEnumerable<User>>(users);
     }
 }

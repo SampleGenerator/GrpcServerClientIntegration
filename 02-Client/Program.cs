@@ -1,10 +1,8 @@
 ﻿using Contracts.Models;
 using Contracts.Requests;
 using Contracts.Services;
-using Grpc.Net.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
-using ProtoBuf.Grpc.Client;
 using ProtoBuf.Grpc.ClientFactory;
 using System.Text.Json;
 
@@ -12,6 +10,16 @@ var services = new ServiceCollection();
 services.AddCodeFirstGrpcClient<IUserService>(o =>
 {
     o.Address = new Uri("https://localhost:5001");
+    o.ChannelOptionsActions.Add(options =>
+    {
+        options.HttpHandler = new SocketsHttpHandler()
+        {
+            PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
+            KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+            KeepAlivePingTimeout = TimeSpan.FromSeconds(30),
+            EnableMultipleHttp2Connections = true,
+        };
+    });
 })
 .AddTransientHttpErrorPolicy(x => x.WaitAndRetryAsync(3, _ => TimeSpan.FromMilliseconds(100)))
 .AddTransientHttpErrorPolicy(x => x.CircuitBreakerAsync(15, TimeSpan.FromSeconds(1)))
@@ -21,21 +29,23 @@ services.AddCodeFirstGrpcClient<IUserService>(o =>
 }).AsAsyncPolicy<HttpResponseMessage>());
 
 var provider = services.BuildServiceProvider();
-var client = provider.GetRequiredService<IUserService>();
+var userService = provider.GetRequiredService<IUserService>();
 
-await CreateUser(client);
+await CreateUser(userService);
 
-await GetUser(client);
+await GetUser(userService);
 
-await GetUsers(client);
+await GetUsersStream(userService);
+
+await GetUsersBuffer(userService);
 
 Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
 
 
-static async Task CreateUser(IUserService client)
+static async Task CreateUser(IUserService userService)
 {
-    var request = new CreateUserRequest
+    var rq = new CreateUserRequest
     {
         FullName = "Farshad Goodarzi",
         Email = "fgoodarzi.pr@gmail.com",
@@ -49,7 +59,7 @@ static async Task CreateUser(IUserService client)
         Friends = new List<Guid> { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() },
     };
 
-    var rsCreateUser = await client.CreateUser(request);
+    var rsCreateUser = await userService.CreateUser(rq);
     var rsCreateUserJson = JsonSerializer.Serialize(rsCreateUser, new JsonSerializerOptions
     {
         WriteIndented = true,
@@ -62,9 +72,9 @@ static async Task CreateUser(IUserService client)
     Console.WriteLine($"=================================");
 }
 
-static async Task GetUser(IUserService client)
+static async Task GetUser(IUserService userService)
 {
-    var rsGetUser = await client.GetUser(new GetUserRequest { Id = 1, });
+    var rsGetUser = await userService.GetUser(new GetUserRequest { Id = 1, });
     var rsGetUserJson = JsonSerializer.Serialize(rsGetUser, new JsonSerializerOptions
     {
         WriteIndented = true,
@@ -76,15 +86,29 @@ static async Task GetUser(IUserService client)
     Console.WriteLine($"=================================");
 }
 
-static async Task GetUsers(IUserService client)
+static async Task GetUsersStream(IUserService userService)
 {
-    var rsGetUsers = await client.GetUsers().ToListAsync();
+    var rsGetUsers = await userService.GetUsersStream().ToListAsync();
     var rsGetUsersJson = JsonSerializer.Serialize(rsGetUsers, new JsonSerializerOptions
     {
         WriteIndented = true,
     });
     Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Get users response");
+    Console.WriteLine("Get users stream response");
+    Console.ForegroundColor = ConsoleColor.White;
+    Console.WriteLine(rsGetUsersJson);
+    Console.WriteLine($"=================================");
+}
+
+static async Task GetUsersBuffer(IUserService userService)
+{
+    var rsGetUsers = await userService.GetUsersBuffer();
+    var rsGetUsersJson = JsonSerializer.Serialize(rsGetUsers, new JsonSerializerOptions
+    {
+        WriteIndented = true,
+    });
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine("Get users buffer response");
     Console.ForegroundColor = ConsoleColor.White;
     Console.WriteLine(rsGetUsersJson);
     Console.WriteLine($"=================================");

@@ -1,10 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿using ProtoBuf;
 
 namespace Contracts.Models;
 
-[DataContract]
+[ProtoContract]
 public sealed class Address
 {
-    [DataMember(Order = 1)]
+    [ProtoMember(1)]
     public string? Value { get; init; }
 }

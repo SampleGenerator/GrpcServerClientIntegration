@@ -1,10 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿using ProtoBuf;
 
 namespace Contracts.Requests;
 
-[DataContract]
+[ProtoContract]
 public sealed class GetUserRequest
 {
-    [DataMember(Order = 1)]
+    [ProtoMember(1)]
     public int Id { get; init; }
 }

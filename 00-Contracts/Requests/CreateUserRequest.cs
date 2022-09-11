@@ -1,23 +1,23 @@
 ﻿using Contracts.Models;
-using System.Runtime.Serialization;
+using ProtoBuf;
 
 namespace Contracts.Requests;
 
-[DataContract]
+[ProtoContract]
 public sealed class CreateUserRequest
 {
-    [DataMember(Order = 1)]
+    [ProtoMember(1)]
     public string? FullName { get; init; }
 
-    [DataMember(Order = 2)]
+    [ProtoMember(2)]
     public string? Email { get; init; }
 
-    [DataMember(Order = 3)]
+    [ProtoMember(3)]
     public Address? Address { get; init; }
 
-    [DataMember(Order = 4)]
+    [ProtoMember(4)]
     public IEnumerable<PhoneNumber>? PhoneNumbers { get; init; }
 
-    [DataMember(Order = 5)]
+    [ProtoMember(5)]
     public IEnumerable<Guid>? Friends { get; init; }
 }
